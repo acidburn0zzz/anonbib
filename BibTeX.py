@@ -30,7 +30,7 @@ MONTHS = [ None,
 WWW_FIELDS = [ 'www_section', 'www_important', 'www_remarks',
                'www_abstract_url', 'www_html_url', 'www_pdf_url', 'www_ps_url',
                'www_txt_url', 'www_ps_gz_url', 'www_amazon_url',
-	       'www_excerpt_url', 'www_publisher_url',
+	       'www_excerpt_url', 'www_publisher_url', 'www_website_url',
                'www_cache_section', 'www_tags' ]
 
 def url_untranslate(s):
@@ -553,7 +553,7 @@ class BibTeXEntry:
         for cached in 0,1:
             availability = []
             if not cached:
-                for which in [ "amazon", "excerpt", "publisher" ]:
+                for which in [ "amazon", "excerpt", "publisher", "website" ]:
                     key = "www_%s_url"%which
                     if self.get(key):
                         url=self[key]
