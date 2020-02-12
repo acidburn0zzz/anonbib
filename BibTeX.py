@@ -572,7 +572,8 @@ class BibTeXEntry:
                                    ('www_pdf_url', 'PDF', 'pdf'),
                                    ('www_ps_url', 'PS', 'ps'),
                                    ('www_txt_url', 'TXT', 'txt'),
-                                   ('www_ps_gz_url', 'gzipped&nbsp;PS','ps.gz')
+                                   ('www_ps_gz_url', 'gzipped&nbsp;PS','ps.gz'),
+                                   ('doi', 'DOI', '')
                                    ):
                 if cached:
                     #XXXX the URL needs to be relative to the absolute
@@ -586,6 +587,7 @@ class BibTeXEntry:
                 else:
                     url = self.get(key)
                     if not url: continue
+                    if key == "doi" : url = "https://doi.org/%s" % url
                 url = unTeXescapeURL(url)
                 url = url.replace('&', '&amp;')
                 availability.append('<a href="%s">%s</a>' %(url,name))
