@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # Copyright 2003-2008, Nick Mathewson.  See LICENSE for licensing info.
 
 """metaphone.py -- Pure-python metaphone implementation.
@@ -50,7 +50,7 @@ NONLCCHARS = "".join([c for c in ALLCHARS if not c.islower()])
 def metaphone(s):
     """Return the metaphone equivalent of a provided string"""
     s = s.lower()
-    s = s.translate(ALLCHARS, NONLCCHARS)
+    s = s.translate(s.maketrans('', '',  NONLCCHARS))
 
     if not s: return ""
 
@@ -182,7 +182,7 @@ def metaphone(s):
     return "".join(result)
 
 def demo(a):
-    print a, "=>", metaphone(a)
+    print(a, "=>", metaphone(a))
 
 if __name__ == '__main__':
     demo("Nick. Mathewson")

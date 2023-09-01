@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # Copyright 2003-2008, Nick Mathewson.  See LICENSE for licensing info.
 
 """BibTeX.py -- parse and manipulate BibTeX files and entries.
@@ -6,7 +6,7 @@
    Based on perl code by Eddie Kohler; heavily modified.
 """
 
-import cStringIO
+from io import StringIO
 import re
 import sys
 import os
@@ -30,7 +30,7 @@ MONTHS = [ None,
 WWW_FIELDS = [ 'www_section', 'www_important', 'www_remarks',
                'www_abstract_url', 'www_html_url', 'www_pdf_url', 'www_ps_url',
                'www_txt_url', 'www_ps_gz_url', 'www_amazon_url',
-	       'www_excerpt_url', 'www_publisher_url', 'www_website_url',
+               'www_excerpt_url', 'www_publisher_url', 'www_website_url',
                'www_cache_section', 'www_tags' ]
 
 def url_untranslate(s):
@@ -67,7 +67,7 @@ class BibTeX:
         """Add a BibTeX entry to this file."""
         k = ent.key
         if self.byKey.get(ent.key.lower()):
-            print >> sys.stderr, "Already have an entry named %s"%k
+            print("Already have an entry named %s"%k, file=sys.stderr)
             return
         self.entries.append(ent)
         self.byKey[ent.key.lower()] = ent
@@ -80,7 +80,7 @@ class BibTeX:
                 try:
                     cr = self.byKey[ent['crossref'].lower()]
                 except KeyError:
-                    print "No such crossref: %s"% ent['crossref']
+                    print("No such crossref: %s"% ent['crossref'])
                     break
                 if seen.get(cr.key):
                     raise ParseError("Circular crossref at %s" % ent.key)
@@ -88,12 +88,12 @@ class BibTeX:
                 del ent.entries['crossref']
 
                 if cr.entryLine < ent.entryLine:
-                    print "Warning: crossref %s used after declaration"%cr.key
+                    print("Warning: crossref %s used after declaration"%cr.key)
 
                 for k in cr.entries.keys():
-                    if ent.entries.has_key(k):
-                        print "ERROR: %s defined both in %s and in %s"%(
-                            k,ent.key,cr.key)
+                    if k in ent.entries:
+                        print("ERROR: %s defined both in %s and in %s"%(
+                            k,ent.key,cr.key))
                     else:
                         ent.entries[k] = cr.entries[k]
 
@@ -106,7 +106,7 @@ class BibTeX:
             rk = "title"
 
         for ent in self.entries:
-            if ent.type in config.OMIT_ENTRIES or not ent.has_key(rk):
+            if ent.type in config.OMIT_ENTRIES or rk not in ent.entries:
                 ent.check()
                 del self.byKey[ent.key.lower()]
             else:
@@ -131,7 +131,7 @@ def buildAuthorTable(entries):
 
     for e in entries:
         for author in e.parsedAuthor:
-            if result.has_key(author):
+            if author in result:
                 continue
 
             c = author
@@ -144,14 +144,14 @@ def buildAuthorTable(entries):
     if 0:
         for a,c in result.items():
             if a != c:
-                print "Collapsing authors: %s => %s" % (a,c)
+                print("Collapsing authors: %s => %s" % (a,c))
     if 0:
-        print parseAuthor("Franz Kaashoek")[0].collapsesTo(
-            parseAuthor("M. Franz Kaashoek")[0])
-        print parseAuthor("Paul F. Syverson")[0].collapsesTo(
-            parseAuthor("Paul Syverson")[0])
-        print parseAuthor("Paul Syverson")[0].collapsesTo(
-            parseAuthor("Paul F. Syverson")[0])
+        print(parseAuthor("Franz Kaashoek")[0].collapsesTo(
+            parseAuthor("M. Franz Kaashoek")[0]))
+        print(parseAuthor("Paul F. Syverson")[0].collapsesTo(
+            parseAuthor("Paul Syverson")[0]))
+        print(parseAuthor("Paul Syverson")[0].collapsesTo(
+            parseAuthor("Paul F. Syverson")[0]))
 
     return result
 
@@ -232,7 +232,7 @@ def splitEntriesByAuthor(entries):
 
             htmlResult[sortkey] = secname
             result.setdefault(sortkey, []).append(ent)
-    sortnames = result.keys()
+    sortnames = list(result.keys())
     sortnames.sort()
     sections = [ (htmlResult[n], result[n]) for n in sortnames ]
     return sections, url_map
@@ -266,13 +266,13 @@ def sortEntriesByDate(entries):
                     monthname = match.group(1)
             mon = MONTHS.index(monthname)
         except ValueError:
-            print "Unknown month %r in %s"%(ent.get("month"), ent.key)
+            print("Unknown month %r in %s"%(ent.get("month"), ent.key))
             mon = 0
 
         try:
             date = int(ent['year'])*13 + mon
         except KeyError:
-            print "ERROR: No year field in %s"%ent.key
+            print("ERROR: No year field in %s"%ent.key)
             date = 10000*13
         except ValueError:
             date = 10000*13
@@ -296,8 +296,6 @@ class BibTeXEntry:
         self.entryLine = 0 # Defined on this line number
     def get(self, k, v=None):
         return self.entries.get(k,v)
-    def has_key(self, k):
-        return self.entries.has_key(k)
     def __getitem__(self, k):
         return self.entries[k]
     def __setitem__(self, k, v):
@@ -329,19 +327,19 @@ class BibTeXEntry:
         else:
             df = DISPLAYED_FIELDS
         for f in df:
-            if not self.entries.has_key(f):
+            if f not in self.entries:
                 continue
             v = self.entries[f]
             if v.startswith("<span class='bad'>"):
                 d.append("%%%%% ERROR: Missing field\n")
                 d.append("%% %s = {?????},\n"%f)
                 continue
-            np = v.translate(ALLCHARS, PRINTINGCHARS)
+            np = v.translate(v.maketrans('', '', PRINTINGCHARS))
             if np:
                 d.append("%%%%% "+("ERROR: Non-ASCII characters: '%r'\n"%np))
             d.append("  ")
             v = v.replace("&", "&amp;")
-            if invStrings.has_key(v):
+            if v in invStrings:
                 s = "%s = %s,\n" %(f, invStrings[v])
             else:
                 s = "%s = {%s},\n" % (f, v)
@@ -353,8 +351,8 @@ class BibTeXEntry:
         a = self.get('author')
         if a:
             self.parsedAuthor = parseAuthor(a)
-            #print a
-            #print "   => ",repr(self.parsedAuthor)
+            #print(a)
+            #print("   => ",repr(self.parsedAuthor))
         else:
             self.parsedAuthor = None
 
@@ -370,7 +368,7 @@ class BibTeXEntry:
            none."""
         errs = self._check()
         for e in errs:
-            print e
+            print(e)
         return not errs
 
     def _check(self):
@@ -409,7 +407,7 @@ class BibTeXEntry:
                    not self['booktitle'].startswith("{Proceedings of"):
                     errs.append("ERROR: %s's booktitle (%r) doesn't start with 'Proceedings of'" % (self.key, self['booktitle']))
 
-        if self.has_key("pages") and not re.search(r'\d+--\d+', self['pages']):
+        if "pages" in self.entries and not re.search(r'\d+--\d+', self['pages']):
             errs.append("ERROR: Misformed pages in %s"%self.key)
 
         if self.type == 'proceedings':
@@ -417,7 +415,7 @@ class BibTeXEntry:
                 errs.append("ERROR: %s is a proceedings: it should have a booktitle, not a title." % self.key)
 
         for field, value in self.entries.items():
-            if value.translate(ALLCHARS, PRINTINGCHARS):
+            if value.translate(value.maketrans('', '', PRINTINGCHARS)):
                 errs.append("ERROR: %s.%s has non-ASCII characters"%(
                     self.key, field))
             if field.startswith("www_") and field not in WWW_FIELDS:
@@ -496,15 +494,15 @@ class BibTeXEntry:
             if self.get('month') or self.get('year'):
                 res.append(", %s %s" % (self.get('month', ''),
                                         self.get('year', '')))
-	elif self.type == 'book':
-	    res = [self['publisher']]
-	    if self.get('year'):
-		res.append(" ");
-		res.append(self.get('year'));
-	#	res.append(", %s"%(self.get('year')))
-	    if self.get('series'):
-		res.append(",");
-		res.append(self['series']);
+        elif self.type == 'book':
+            res = [self['publisher']]
+            if self.get('year'):
+                res.append(" ");
+                res.append(self.get('year'));
+            # res.append(", %s"%(self.get('year')))
+            if self.get('series'):
+                res.append(",");
+                res.append(self['series']);
         elif self.type == 'misc':
             res = [self['howpublished']]
             if self.get('month') or self.get('year'):
@@ -563,8 +561,8 @@ class BibTeXEntry:
             cache_section = self.get('www_cache_section', ".")
             if cache_section not in config.CACHE_SECTIONS:
                 if cache_section != ".":
-                    print >>sys.stderr, "Unrecognized cache section %s"%(
-                        cache_section)
+                    print("Unrecognized cache section %s"%(
+                        cache_section), file=sys.stderr)
                     cache_section="."
 
             for key, name, ext in (('www_abstract_url', 'abstract','abstract'),
@@ -685,7 +683,7 @@ def htmlize(s):
     s = unTeXescapeURL(s)
     s = RE_LIGATURE.sub(_unlig_html, s);
     s = RE_TEX_CMD.sub("", s)
-    s = s.translate(ALLCHARS, "{}")
+    s = s.translate(s.maketrans('', '', "{}"))
     s = RE_PAGE_SPAN.sub(lambda m: "%s-%s"%(m.groups()), s)
     s = s.replace("---", "&mdash;");
     s = s.replace("--", "&ndash;");
@@ -704,7 +702,7 @@ def txtize(s):
     s = RE_ACCENT.sub(lambda m: "%s" % m.group(2), s)
     s = RE_LIGATURE.sub(lambda m: "%s%s"%m.groups(), s)
     s = RE_TEX_CMD.sub("", s)
-    s = s.translate(ALLCHARS, "{}")
+    s = s.translate(s.maketrans('', '', "{}"))
     return s
 
 PROCEEDINGS_RE = re.compile(
@@ -856,7 +854,7 @@ def _split(s,w=79,indent=8):
     first = 1
     indentation = ""
     while len(s) > w:
-        for i in xrange(w-1, 20, -1):
+        for i in range(w-1, 20, -1):
             if s[i] == ' ':
                 r.append(indentation+s[:i])
                 s = s[i+1:]
@@ -878,14 +876,14 @@ class FileIter:
         if fname:
             file = open(fname, 'r')
         if string:
-            file = cStringIO.StringIO(string)
+            file = StringIO(string)
         if file:
-            it = iter(file.xreadlines())
+            it = iter(file)
         self.iter = it
         assert self.iter
         self.lineno = 0
-        self._next = it.next
-    def next(self):
+        self._next = it.__next__
+    def __next__(self):
         self.lineno += 1
         return self._next()
 
@@ -894,7 +892,7 @@ def parseAuthor(s):
     try:
         return _parseAuthor(s)
     except:
-        print >>sys.stderr, "Internal error while parsing author %r"%s
+        print("Internal error while parsing author %r"%s, file=sys.stderr)
         raise
 
 def _parseAuthor(s):
@@ -905,7 +903,7 @@ def _parseAuthor(s):
     while s:
         s = s.strip()
         bracelevel = 0
-        for i in xrange(len(s)):
+        for i in range(len(s)):
             if s[i] == '{':
                 bracelevel += 1
             elif s[i] == '}':
@@ -961,7 +959,6 @@ def _parseAuthor(s):
 
     return parsedAuthors
 
-ALLCHARS = "".join(map(chr,range(256)))
 PRINTINGCHARS = "\t\n\r"+"".join(map(chr,range(32, 127)))
 LC_CHARS = "abcdefghijklmnopqrstuvwxyz"
 SV_DELCHARS = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -974,10 +971,10 @@ def split_von(f,v,l,x):
         tt = t = x[0]
         del x[0]
         if tt[:2] == '{\\':
-            tt = tt.translate(ALLCHARS, SV_DELCHARS)
+            tt = tt.translate(tt.maketrans('', '', SV_DELCHARS))
             tt = RE_ESCAPED.sub("", tt)
-            tt = tt.translate(ALLCHARS, "{}")
-        if tt.translate(ALLCHARS, LC_CHARS) == "":
+            tt = tt.translate(tt.maketrans('', '', "{}"))
+        if tt.translate(tt.maketrans('', '', LC_CHARS)) == "":
             v.append(t)
             in_von = 1
         elif in_von and f is not None:
@@ -1063,7 +1060,7 @@ class Parser:
                         continue
                     data.append(line)
                     data.append(" ")
-                    line = it.next()
+                    line = next(it)
                 self.litStringLine = 0
             elif line[0] == '{':
                 bracelevel += 1
@@ -1071,32 +1068,32 @@ class Parser:
                 while bracelevel:
                     m = BRACE_CLOSE_RE.match(line)
                     if m:
-                        #print bracelevel, "A", repr(m.group(1))
+                        #print(bracelevel, "A", repr(m.group(1)))
                         data.append(m.group(1))
                         bracelevel -= 1
                         if bracelevel > 0:
-                            #print bracelevel, "- '}'"
+                            #print(bracelevel, "- '}'")
                             data.append('}')
                         line = m.group(2)
                         continue
                     m = BRACE_OPEN_RE.match(line)
                     if m:
                         bracelevel += 1
-                        #print bracelevel, "B", repr(m.group(1))
+                        #print(bracelevel, "B", repr(m.group(1)))
                         data.append(m.group(1))
                         line = m.group(2)
                         continue
                     else:
-                        #print bracelevel, "C", repr(line)
+                        #print(bracelevel, "C", repr(line))
                         data.append(line)
                         data.append(" ")
-                        line = it.next()
+                        line = next(it)
             elif line[0] == '#':
-                print >>sys.stderr, "Weird concat on line %s"%it.lineno
+                print("Weird concat on line %s"%it.lineno, file=sys.stderr)
             elif line[0] in "},":
                 if not data:
-                    print >>sys.stderr, "No data after field on line %s"%(
-                        it.lineno)
+                    print("No data after field on line %s"%(
+                        it.lineno), file=sys.stderr)
             else:
                 m = RAW_DATA_RE.match(line)
                 if m:
@@ -1184,7 +1181,7 @@ class Parser:
         else:
             key = v[0]
             d = {}
-            for i in xrange(1,len(v),2):
+            for i in range(1,len(v),2):
                 d[v[i].lower()] = v[i+1]
             ent = BibTeXEntry(self.curEntType, key, d)
             ent.entryLine = self.entryLine
@@ -1211,11 +1208,11 @@ class Parser:
 
     def _parse(self):
         it = self.fileiter
-        line = it.next()
+        line = next(it)
         while 1:
             # Skip blank lines.
             while not line or line.isspace() or OUTER_COMMENT_RE.match(line):
-                line = it.next()
+                line = next(it)
             # Get the first line of an entry.
             m = ENTRY_BEGIN_RE.match(line)
             if m:
@@ -1229,7 +1226,7 @@ class Parser:
 
 def _advance(it,line):
     while not line or line.isspace() or COMMENT_RE.match(line):
-        line = it.next()
+        line = next(it)
     return line
 
 # Matches a comment line outside of an entry.
@@ -1279,5 +1276,5 @@ if __name__ == '__main__':
 
     for e in r.entries:
         if e.type in ("proceedings", "journal"): continue
-        print e.to_html()
+        print(e.to_html())
 

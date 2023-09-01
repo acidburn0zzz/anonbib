@@ -1,9 +1,9 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # Copyright 2003-2008, Nick Mathewson.  See LICENSE for licensing info.
 
 """Code to determine which entries are new and which are old.
 
-   To scan a new file, run "python reconcile.py anonbib.cfg new-file.bib".  This
+   To scan a new file, run "python3 reconcile.py anonbib.cfg new-file.bib".  This
    will generate a new bibtex file called 'tmp.bib', with all the new entries
    cleaned up a little, and all the duplicate entries commented out.
 """
@@ -110,8 +110,8 @@ class MasterBibTeX(BibTeX.BibTeX):
             return 0
         a1 = [ (a.last, a) for a in a1 ]
         a2 = [ (a.last, a) for a in a2 ]
-        a1.sort()
-        a2.sort()
+        a1.sort(key=lambda x:x[0])
+        a2.sort(key=lambda x:x[0])
         if len(a1) != len(a2):
             return 0
         r = 2
@@ -168,16 +168,16 @@ class MasterBibTeX(BibTeX.BibTeX):
             matches = m2
 
             if not matches:
-                print "No match for %s"%e.key
+                print("No match for %s"%e.key)
             if matches[-1][1] is e:
-                print "%s matches for %s: OK."%(len(matches), e.key)
+                print("%s matches for %s: OK."%(len(matches), e.key))
             else:
-                print "%s matches for %s: %s is best!" %(len(matches), e.key,
-                                                         matches[-1][1].key)
+                print("%s matches for %s: %s is best!" %(len(matches), e.key,
+                                                         matches[-1][1].key))
             if len(matches) > 1:
                 for g, m in matches:
-                    print "%%%% goodness", g
-                    print m
+                    print("%%%% goodness", g)
+                    print(m)
 
 
 def noteToURL(note):
@@ -202,7 +202,7 @@ def emit(f,ent):
     global all_ok
 
     errs = ent._check()
-    if master.byKey.has_key(ent.key.strip().lower()):
+    if ent.key.strip().lower() in master.byKey:
         errs.append("ERROR: Key collision with master file")
 
     if errs:
@@ -210,7 +210,7 @@ def emit(f,ent):
 
     note = ent.get("note")
     if ent.getURL() and not note:
-        ent['note'] = "\url{%s}"%ent.getURL()
+        ent['note'] = "\\url{%s}"%ent.getURL()
     elif note:
         m = re.match(r'\\url{(.*)}', note)
         if m:
@@ -232,61 +232,61 @@ def emit(f,ent):
     if errs:
         all_ok = 0
     for e in errs:
-        print >>f, "%%%%", e
+        print("%%%%", e, file=f)
 
-    print >>f, ent.format(77, 4, v=1, invStrings=invStrings)
+    print(ent.format(77, 4, v=1, invStrings=invStrings), file=f)
 
 def emitKnown(f, ent, matches):
-    print >>f, "%% Candidates are:", ", ".join([e.key for g,e in matches])
-    print >>f, "%%"
-    print >>f, "%"+(ent.format(77,4,1,invStrings).replace("\n", "\n%"))
+    print("%% Candidates are:", ", ".join([e.key for g,e in matches]), file=f)
+    print("%%", file=f)
+    print("%"+(ent.format(77,4,1,invStrings).replace("\n", "\n%")), file=f)
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print "reconcile.py expects 2 arguments"
+        print("reconcile.py expects 2 arguments")
         sys.exit(1)
 
     config.load(sys.argv[1])
 
-    print "========= Scanning master =========="
+    print("========= Scanning master ==========")
     master = MasterBibTeX()
     master = BibTeX.parseFile(config.MASTER_BIB, result=master)
     master.buildIndex()
 
-    print "========= Scanning new file ========"
+    print("========= Scanning new file ========")
     try:
         fn = sys.argv[2]
         input = BibTeX.parseFile(fn)
-    except BibTeX.ParseError, e:
-        print "Error parsing %s: %s"%(fn,e)
+    except BibTeX.ParseError as e:
+        print("Error parsing %s: %s"%(fn,e))
         sys.exit(1)
 
     f = open('tmp.bib', 'w')
-    keys = input.newStrings.keys()
+    keys = list(input.newStrings.keys())
     keys.sort()
     for k in keys:
         v = input.newStrings[k]
-        print >>f, "@string{%s = {%s}}"%(k,v)
+        print("@string{%s = {%s}}"%(k,v), file=f)
 
     invStrings = input.invStrings
 
     for e in input.entries:
         if not (e.get('title') and e.get('author')):
-            print >>f, "%%\n%%%% Not enough information to search for a match: need title and author.\n%%"
+            print("%%\n%%%% Not enough information to search for a match: need title and author.\n%%", file=f)
             emit(f, e)
             continue
 
         matches = master.includes(e, all=1)
         if not matches:
-            print >>f, "%%\n%%%% This entry is probably new: No match found.\n%%"
+            print("%%\n%%%% This entry is probably new: No match found.\n%%", file=f)
             emit(f, e)
         else:
-            print >>f, "%%"
-            print >>f, "%%%% Possible match found for this entry; max goodness",\
-                  matches[-1][0], "\n%%"
+            print("%%", file=f)
+            print("%%%% Possible match found for this entry; max goodness",\
+                  matches[-1][0], "\n%%", file=f)
             emitKnown(f, e, matches)
 
     if not all_ok:
-        print >>f, "\n\n\nErrors remain; not finished.\n"
+        print("\n\n\nErrors remain; not finished.\n", file=f)
 
     f.close()
