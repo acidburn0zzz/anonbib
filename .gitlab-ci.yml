@@ -38,3 +38,15 @@ python312:
   script:
     - make
     - make test
+
+pages:
+  stage: deploy
+  script:
+    - mkdir public
+    - make && cp *.html public && cp -r css public && cp -r full public
+    # We don't create a default index.html page, thus redirect to date.html
+    # which is the default landing page on freehaven.net as well.
+    - echo "/anonbib/ /anonbib/date.html" > public/_redirects
+  artifacts:
+    paths:
+      - public
