@@ -1,0 +1,40 @@
+# Python stable releases: https://www.python.org/downloads/
+# 3.12 EOL 2028-10, PEP 693
+# 3.11 EOL 2027-10, PEP 664
+# 3.10 EOL 2026-10, PEP 619
+# 3.9 EOL 2025-10, PEP 596
+# 3.8 EOL 2024-10, PEP 569
+
+variables:
+  BASE_IMAGE: python:3.12
+
+image: $BASE_IMAGE
+
+python38:
+  variables:
+    BASE_IMAGE: python:3.8
+  script:
+    - make
+
+python39:
+  variables:
+    BASE_IMAGE: python:3.9
+  script:
+    - make
+
+python310:
+  variables:
+    BASE_IMAGE: python:3.10
+  script:
+    - make
+
+python311:
+  variables:
+    BASE_IMAGE: python:3.11
+  script:
+    - make
+
+python312:
+  script:
+    - make
+    - make test
