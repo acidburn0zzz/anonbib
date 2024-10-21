@@ -9071,6 +9071,22 @@ www_pdf_url = {https://www.usenix.org/system/files/conference/nsdi16/nsdi16-pape
   www_pdf_url={https://www.usenix.org/system/files/foci20-paper-govil.pdf}
 }
 
+@inproceedings{sauteedonions2022,
+  author = {Dahlberg, Rasmus and Syverson, Paul and Nordberg, Linus and Finkel, Matthew},
+  title = {Sauteed Onions: Transparent Associations from Domain Names to Onion Addresses},
+  year = {2022},
+  isbn = {9781450398732},
+  publisher = {Association for Computing Machinery},
+  url = {https://doi.org/10.1145/3559613.3563208},
+  doi = {10.1145/3559613.3563208},
+  abstract = {Onion addresses offer valuable features such as lookup and routing security, self-authenticated connections, and censorship resistance. Therefore, many websites are also available as onionsites in Tor. The way registered domains and onion addresses are associated is however a weak link. We introduce sauteed onions, transparent associations from domain names to onion addresses. Our approach relies on TLS certificates to establish onion associations. It is much like today's onion location which relies on Certificate Authorities (CAs) due to its HTTPS requirement, but has the added benefit of becoming public for everyone to see in Certificate Transparency (CT) logs. We propose and prototype two uses of sauteed onions: certificate-based onion location and search engines that use CT logs as the underlying database. The achieved goals are consistency of available onion associations, which mitigates attacks where users are partitioned depending on which onion addresses they are given, forward censorship-resistance after a TLS site has been configured once, and improved third-party discovery of onion associations, which requires less trust while easily scaling to all onionsites that opt-in.},
+  booktitle = {Proceedings of the 21st Workshop on Privacy in the Electronic Society},
+  pages = {35--40},
+  numpages = {6},
+  www_section= misc,
+  www_pdf_url={https://dl.acm.org/doi/pdf/10.1145/3559613.3563208},
+}
+
 @inproceedings{wifs2011-fingerprinting,
   title = {Fingerprinting {T}or's Hidden Service Log Files Using a Timing Channel},
   author = {Juan A. Elices and Fernando Perez-Gonzalez and Carmela Troncoso},
